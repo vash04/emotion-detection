@@ -4,158 +4,435 @@ import pandas as pd
 import os
 import re
 import nltk
+import logging
 
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 
 
-nltk.download('wordnet')
-nltk.download('stopwords')
+# =========================
+# Logging Configuration
+# =========================
 
+LOG_DIR = "logs"
+
+os.makedirs(LOG_DIR, exist_ok=True)
+
+LOG_FILE = os.path.join(
+    LOG_DIR,
+    "data_preprocessing.log"
+)
+
+logging.basicConfig(
+    filename=LOG_FILE,
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+
+# =========================
+# Download NLTK Resources
+# =========================
+
+try:
+
+    nltk.download('wordnet')
+    nltk.download('stopwords')
+
+    logging.info(
+        "NLTK resources downloaded successfully"
+    )
+
+except Exception as e:
+
+    logging.error(
+        f"Error downloading NLTK resources: {e}"
+    )
+
+    raise
+
+
+# =========================
+# Load Dataset
+# =========================
 
 def load_data(train_path, test_path):
 
-    train_data = pd.read_csv(train_path)
-    test_data = pd.read_csv(test_path)
+    try:
 
-    return train_data, test_data
+        logging.info(
+            "Loading training and testing data"
+        )
 
+        train_data = pd.read_csv(train_path)
+        test_data = pd.read_csv(test_path)
+
+        logging.info(
+            "Data loaded successfully"
+        )
+
+        return train_data, test_data
+
+    except FileNotFoundError as e:
+
+        logging.error(
+            f"File not found: {e}"
+        )
+
+        raise
+
+    except pd.errors.EmptyDataError as e:
+
+        logging.error(
+            f"CSV file is empty: {e}"
+        )
+
+        raise
+
+    except Exception as e:
+
+        logging.error(
+            f"Error while loading data: {e}"
+        )
+
+        raise
+
+
+# =========================
+# Lemmatization
+# =========================
 
 def lemmatization(text):
 
-    lemmatizer = WordNetLemmatizer()
+    try:
 
-    text = text.split()
+        lemmatizer = WordNetLemmatizer()
 
-    text = [lemmatizer.lemmatize(word) for word in text]
+        text = text.split()
 
-    return " ".join(text)
+        text = [
+            lemmatizer.lemmatize(word)
+            for word in text
+        ]
 
+        return " ".join(text)
+
+    except Exception as e:
+
+        logging.error(
+            f"Error in lemmatization: {e}"
+        )
+
+        return text
+
+
+# =========================
+# Remove Stopwords
+# =========================
 
 def remove_stop_words(text):
 
-    stop_words = set(stopwords.words("english"))
+    try:
 
-    text = [
-        word for word in str(text).split()
-        if word not in stop_words
-    ]
+        stop_words = set(
+            stopwords.words("english")
+        )
 
-    return " ".join(text)
+        text = [
+            word for word in str(text).split()
+            if word not in stop_words
+        ]
 
+        return " ".join(text)
+
+    except Exception as e:
+
+        logging.error(
+            f"Error removing stop words: {e}"
+        )
+
+        return text
+
+
+# =========================
+# Remove Numbers
+# =========================
 
 def removing_numbers(text):
 
-    text = ''.join(
-        [char for char in text if not char.isdigit()]
-    )
+    try:
 
-    return text
+        text = ''.join(
+            [
+                char for char in text
+                if not char.isdigit()
+            ]
+        )
 
+        return text
+
+    except Exception as e:
+
+        logging.error(
+            f"Error removing numbers: {e}"
+        )
+
+        return text
+
+
+# =========================
+# Convert To Lowercase
+# =========================
 
 def lower_case(text):
 
-    text = text.split()
+    try:
 
-    text = [word.lower() for word in text]
+        text = text.split()
 
-    return " ".join(text)
+        text = [
+            word.lower()
+            for word in text
+        ]
 
+        return " ".join(text)
+
+    except Exception as e:
+
+        logging.error(
+            f"Error converting text to lowercase: {e}"
+        )
+
+        return text
+
+
+# =========================
+# Remove Punctuations
+# =========================
 
 def removing_punctuations(text):
 
-    text = re.sub(
-        '[%s]' % re.escape(
-            """!"#$%&'()*+,،-./:;<=>؟?@[\]^_`{|}~"""
-        ),
-        ' ',
-        text
-    )
+    try:
 
-    text = text.replace('؛', "")
+        text = re.sub(
+            '[%s]' % re.escape(
+                """!"#$%&'()*+,،-./:;<=>؟?@[\]^_`{|}~"""
+            ),
+            ' ',
+            text
+        )
 
-    text = re.sub('\s+', ' ', text)
+        text = text.replace('؛', "")
 
-    text = " ".join(text.split())
+        text = re.sub(
+            '\s+',
+            ' ',
+            text
+        )
 
-    return text.strip()
+        text = " ".join(text.split())
 
+        return text.strip()
+
+    except Exception as e:
+
+        logging.error(
+            f"Error removing punctuations: {e}"
+        )
+
+        return text
+
+
+# =========================
+# Remove URLs
+# =========================
 
 def removing_urls(text):
 
-    url_pattern = re.compile(
-        r'https?://\S+|www\.\S+'
-    )
+    try:
 
-    return url_pattern.sub(r'', text)
+        url_pattern = re.compile(
+            r'https?://\S+|www\.\S+'
+        )
 
+        return url_pattern.sub(
+            r'',
+            text
+        )
+
+    except Exception as e:
+
+        logging.error(
+            f"Error removing URLs: {e}"
+        )
+
+        return text
+
+
+# =========================
+# Normalize Text
+# =========================
 
 def normalize_text(df):
 
-    df.content = df.content.apply(
-        lambda content: lower_case(content)
-    )
+    try:
 
-    df.content = df.content.apply(
-        lambda content: remove_stop_words(content)
-    )
+        logging.info(
+            "Starting text normalization"
+        )
 
-    df.content = df.content.apply(
-        lambda content: removing_numbers(content)
-    )
+        if 'content' not in df.columns:
 
-    df.content = df.content.apply(
-        lambda content: removing_punctuations(content)
-    )
+            raise ValueError(
+                "'content' column not found"
+            )
 
-    df.content = df.content.apply(
-        lambda content: removing_urls(content)
-    )
+        df.content = df.content.apply(
+            lambda content: lower_case(
+                str(content)
+            )
+        )
 
-    df.content = df.content.apply(
-        lambda content: lemmatization(content)
-    )
+        df.content = df.content.apply(
+            lambda content: remove_stop_words(
+                content
+            )
+        )
 
-    return df
+        df.content = df.content.apply(
+            lambda content: removing_numbers(
+                content
+            )
+        )
+
+        df.content = df.content.apply(
+            lambda content: removing_punctuations(
+                content
+            )
+        )
+
+        df.content = df.content.apply(
+            lambda content: removing_urls(
+                content
+            )
+        )
+
+        df.content = df.content.apply(
+            lambda content: lemmatization(
+                content
+            )
+        )
+
+        logging.info(
+            "Text normalization completed"
+        )
+
+        return df
+
+    except Exception as e:
+
+        logging.error(
+            f"Error during text normalization: {e}"
+        )
+
+        raise
 
 
-def save_data(processed_train_data,
-              processed_test_data,
-              data_path):
+# =========================
+# Save Processed Data
+# =========================
 
-    os.makedirs(data_path, exist_ok=True)
+def save_data(
+        processed_train_data,
+        processed_test_data,
+        data_path
+):
 
-    processed_train_data.to_csv(
-        os.path.join(data_path, "processed_train.csv"),
-        index=False
-    )
+    try:
 
-    processed_test_data.to_csv(
-        os.path.join(data_path, "processed_test.csv"),
-        index=False
-    )
+        logging.info(
+            "Saving processed data"
+        )
 
+        os.makedirs(
+            data_path,
+            exist_ok=True
+        )
+
+        processed_train_data.to_csv(
+            os.path.join(
+                data_path,
+                "processed_train.csv"
+            ),
+            index=False
+        )
+
+        processed_test_data.to_csv(
+            os.path.join(
+                data_path,
+                "processed_test.csv"
+            ),
+            index=False
+        )
+
+        logging.info(
+            "Processed data saved successfully"
+        )
+
+    except Exception as e:
+
+        logging.error(
+            f"Error saving data: {e}"
+        )
+
+        raise
+
+
+# =========================
+# Main Function
+# =========================
 
 def main():
 
-    train_data, test_data = load_data(
-        "./data/raw/train.csv",
-        "./data/raw/test.csv"
-    )
+    try:
 
-    processed_train_data = normalize_text(
-        train_data
-    )
+        logging.info(
+            "Data preprocessing pipeline started"
+        )
 
-    processed_test_data = normalize_text(
-        test_data
-    )
+        train_data, test_data = load_data(
+            "./data/raw/train.csv",
+            "./data/raw/test.csv"
+        )
 
-    save_data(
-        processed_train_data,
-        processed_test_data,
-        os.path.join("data", "processed")
-    )
+        processed_train_data = normalize_text(
+            train_data
+        )
+
+        processed_test_data = normalize_text(
+            test_data
+        )
+
+        save_data(
+            processed_train_data,
+            processed_test_data,
+            os.path.join(
+                "data",
+                "processed"
+            )
+        )
+
+        logging.info(
+            "Data preprocessing pipeline completed successfully"
+        )
+
+    except Exception as e:
+
+        logging.error(
+            f"Pipeline failed: {e}"
+        )
+
+        raise
 
 
 if __name__ == "__main__":
